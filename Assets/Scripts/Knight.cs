@@ -1,7 +1,8 @@
+using NUnit.Framework;
 using Unity.VisualScripting;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody2D), typeof(TouchingDirections))]
+[RequireComponent(typeof(Rigidbody2D), typeof(TouchingDirections), typeof(Damagable))]
 public class Knight : MonoBehaviour
 {
     public float walkSpeed = 3f;
@@ -9,10 +10,16 @@ public class Knight : MonoBehaviour
     Rigidbody2D rb;
     TouchingDirections touchingDirections;
     Animator animator;
+    Damagable damagable;
     public enum WalkableDirection
     {
         Left,
         Right
+    }
+     public bool CanMove{
+        get{
+            return animator.GetBool(AnimationStrings.canMove);
+        }
     }
     private WalkableDirection _walkDirection = WalkableDirection.Right;
     private Vector2 walkDirectionVector = Vector2.right;
@@ -48,6 +55,7 @@ public class Knight : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         touchingDirections = GetComponent<TouchingDirections>();
+        damagable = GetComponent<Damagable>();
     }
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -61,7 +69,14 @@ public class Knight : MonoBehaviour
         if(touchingDirections.IsGrounded && touchingDirections.IsOnWall){
             flipDirection();
         }
-        rb.linearVelocity = new Vector2(walkSpeed * walkDirectionVector.x, rb.linearVelocity.y);
+        if(!damagable.LockVelocity){
+            if(CanMove && !HasTarget){
+            rb.linearVelocity = new Vector2(walkSpeed * walkDirectionVector.x, rb.linearVelocity.y);
+            }
+            else{
+                rb.linearVelocity = Vector2.zero;
+            }
+        }
     }
     private void Update()
     {
@@ -77,5 +92,8 @@ public class Knight : MonoBehaviour
         else {
             Debug.LogError("BITCH");
         }
+    }
+    public void OnHit(int damage, Vector2 knockBack){
+        rb.linearVelocity = new Vector2(knockBack.x, rb.linearVelocity.y+knockBack.y);
     }
 }

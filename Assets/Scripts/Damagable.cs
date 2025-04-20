@@ -1,8 +1,9 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 public class Damagable : MonoBehaviour
 {
-
+    public UnityEvent<int, Vector2> damagableHit;
     Animator animator;
     [SerializeField]
     private int _maxHealth = 100;
@@ -48,11 +49,24 @@ public class Damagable : MonoBehaviour
     {
         animator = GetComponent<Animator>();
     }
-    public void Hit(int damage){
+    public bool LockVelocity {
+        get{
+            return animator.GetBool(AnimationStrings.lockVelocity);
+        }
+        set{
+            animator.SetBool(AnimationStrings.lockVelocity, value);
+        }
+    }
+    public bool Hit(int damage, Vector2 knockBack){
         if (IsAlive && !isInvincible){
             Health -= damage;
             isInvincible = true;
+            animator.SetTrigger(AnimationStrings.hit);
+            LockVelocity = true;
+            damagableHit?.Invoke(damage, knockBack);
+            return true;
         }
+        return false;
     }
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -70,6 +84,5 @@ public class Damagable : MonoBehaviour
             }
             timeSinceHit += Time.deltaTime;
         }
-        Hit(30);
     }
 }

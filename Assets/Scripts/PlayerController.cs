@@ -1,7 +1,8 @@
+using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(Rigidbody2D),typeof(TouchingDirections))]
+[RequireComponent(typeof(Rigidbody2D),typeof(TouchingDirections), typeof(Damagable))]
 public class PlayerController : MonoBehaviour
 {
     public float walkSpeed = 5f;
@@ -9,6 +10,7 @@ public class PlayerController : MonoBehaviour
     public float airWalkSpeed = 3f;
     public float jumpInpulse = 10f;
     TouchingDirections touchingDirections;
+    Damagable damagable;
 
     public float CurrentMoveSpeed {
         get{
@@ -78,6 +80,11 @@ public class PlayerController : MonoBehaviour
             return animator.GetBool(AnimationStrings.canMove);
         }
     }
+    public bool IsAlive{
+        get{
+            return animator.GetBool(AnimationStrings.isAlive);
+        }
+    }
 
     Rigidbody2D rb;
     Animator animator;
@@ -85,7 +92,8 @@ public class PlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
-        touchingDirections = GetComponent<TouchingDirections>(); 
+        touchingDirections = GetComponent<TouchingDirections>();
+        damagable = GetComponent<Damagable>();
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -102,7 +110,9 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        rb.linearVelocity = new Vector2(moveInput.x * CurrentMoveSpeed , rb.linearVelocity.y);
+        if(!damagable.LockVelocity){
+            rb.linearVelocity = new Vector2(moveInput.x * CurrentMoveSpeed , rb.linearVelocity.y);
+        }
         animator.SetFloat(AnimationStrings.yVelocity, rb.linearVelocity.y);
         // transform.position += rb.velocity * Time.deltaTime;
     }
@@ -110,9 +120,13 @@ public class PlayerController : MonoBehaviour
     public void OnMove(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
-        IsMoving = moveInput != Vector2.zero;
-
-        SetFacingDirection(moveInput);
+        if (IsAlive){
+            IsMoving = moveInput != Vector2.zero;
+            SetFacingDirection(moveInput);
+        }
+        else{
+            IsMoving = false;
+        }
     }
     private void SetFacingDirection(Vector2 moveInput){
         if(moveInput.x > 0 && !IsFacingRight){
@@ -142,5 +156,8 @@ public class PlayerController : MonoBehaviour
         if(context.started){
             animator.SetTrigger(AnimationStrings.attack);
         }
+    }
+    public void OnHit(int damage, Vector2 knockBack){
+        rb.linearVelocity = new Vector2(knockBack.x, rb.linearVelocity.y+knockBack.y);
     }
 }
