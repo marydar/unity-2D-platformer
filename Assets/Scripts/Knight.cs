@@ -5,6 +5,7 @@ using UnityEngine;
 public class Knight : MonoBehaviour
 {
     public float walkSpeed = 3f;
+    public DetectionZone attackZone;
     Rigidbody2D rb;
     TouchingDirections touchingDirections;
     Animator animator;
@@ -13,8 +14,8 @@ public class Knight : MonoBehaviour
         Left,
         Right
     }
-    private WalkableDirection _walkDirection;
-    private Vector2 walkDirectionVector;
+    private WalkableDirection _walkDirection = WalkableDirection.Right;
+    private Vector2 walkDirectionVector = Vector2.right;
     public WalkableDirection WalkDirection{
         get{
             return _walkDirection;
@@ -32,6 +33,16 @@ public class Knight : MonoBehaviour
             _walkDirection = value;
         }
     }
+    public bool _hasTarget = false;
+    public bool HasTarget{
+        get{
+            return _hasTarget;
+        }
+        set{
+            _hasTarget = value;
+            animator.SetBool(AnimationStrings.hasTarget, value);
+        }
+    }
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -45,12 +56,16 @@ public class Knight : MonoBehaviour
     }
 
     // Update is called once per frame
-    void FixedUpdate()
+    private void FixedUpdate()
     {   
         if(touchingDirections.IsGrounded && touchingDirections.IsOnWall){
             flipDirection();
         }
         rb.linearVelocity = new Vector2(walkSpeed * walkDirectionVector.x, rb.linearVelocity.y);
+    }
+    private void Update()
+    {
+        HasTarget = attackZone.detectedColliders.Count > 0;
     }
     private void flipDirection(){
         if(WalkDirection == WalkableDirection.Right){
